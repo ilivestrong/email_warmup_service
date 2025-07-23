@@ -46,12 +46,11 @@ func NewGoogleProvider(cfg config.GoogleOAuthConfig) Provider {
 	}
 }
 
-func (g *GoogleProvider) Send(ctx context.Context, to, subject, body string) error {
-	msg := []byte(
-		fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s", to, subject, body),
-	)
-	email := base64.URLEncoding.EncodeToString(msg)
-	_, err := g.service.Users.Messages.Send("me", &gmail.Message{Raw: email}).Do()
+func (g *GoogleProvider) Send(ctx context.Context, from, to, subject, body string) error {
+	fmt.Println(from, to)
+	msg := []byte(fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s", from, to, subject, body))
+	raw := base64.URLEncoding.EncodeToString(msg)
+	_, err := g.service.Users.Messages.Send(from, &gmail.Message{Raw: raw}).Do()
 	return err
 }
 

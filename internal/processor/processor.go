@@ -10,19 +10,21 @@ import (
 	"github.com/ilivestrong/email_warmup_service/internal/providers"
 	"github.com/ilivestrong/email_warmup_service/internal/queue"
 	"github.com/ilivestrong/email_warmup_service/internal/quota"
+	"github.com/ilivestrong/email_warmup_service/internal/resolver"
 	"github.com/ilivestrong/email_warmup_service/internal/validator"
 )
 
 type Processor struct {
-	qs quota.Store
-	v  *validator.Validator
-	pf *providers.Factory
-	qc queue.Client
-	rp config.RetryPolicy
+	qs            quota.Store
+	v             *validator.Validator
+	pf            *providers.Factory
+	qc            queue.Client
+	rp            config.RetryPolicy
+	emailResolver resolver.Resolver
 }
 
-func New(qs quota.Store, v *validator.Validator, pf *providers.Factory, qc queue.Client, rp config.RetryPolicy) *Processor {
-	return &Processor{qs, v, pf, qc, rp}
+func New(qs quota.Store, v *validator.Validator, pf *providers.Factory, er resolver.Resolver, qc queue.Client, rp config.RetryPolicy) *Processor {
+	return &Processor{qs, v, pf, qc, rp, er}
 }
 
 func (p *Processor) Start(ctx context.Context) error { return p.qc.Consume(ctx, p.handle) }
@@ -37,6 +39,10 @@ func (p *Processor) handle(ctx context.Context, ev *queue.SendEmailEvent) error 
 	if !p.v.IsValid(ev.ToAddress) {
 		return nil
 	}
+	fromAddr, err := p.emailResolver.Resolve(ctx, ev.TenantID)
+	if err != nil {
+		return err
+	}
 	prov, err := p.pf.Get(ev.TenantID)
 	if err != nil {
 		fmt.Println("p.pf.Get(ev.TenantID) error", err)
@@ -49,7 +55,7 @@ func (p *Processor) handle(ctx context.Context, ev *queue.SendEmailEvent) error 
 
 	delay := p.rp.InitialDelay
 	for i := 0; i <= p.rp.MaxRetries; i++ {
-		if err := prov.Send(ctx, ev.ToAddress, ev.Subject, ev.Body); err == nil {
+		if err := prov.Send(ctx, fromAddr, ev.ToAddress, ev.Subject, ev.Body); err == nil {
 			delivered = true
 			break
 		} else {

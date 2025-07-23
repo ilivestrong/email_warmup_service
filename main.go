@@ -12,6 +12,7 @@ import (
 	"github.com/ilivestrong/email_warmup_service/internal/providers"
 	"github.com/ilivestrong/email_warmup_service/internal/queue"
 	"github.com/ilivestrong/email_warmup_service/internal/quota"
+	"github.com/ilivestrong/email_warmup_service/internal/resolver"
 	"github.com/ilivestrong/email_warmup_service/internal/scheduler"
 	"github.com/ilivestrong/email_warmup_service/internal/validator"
 )
@@ -40,8 +41,9 @@ func main() {
 
 	emailValidator := validator.New(cfg.Validator.DisposableDomains)
 	provFactory := providers.NewFactory(cfg.ProviderMap, cfg.SMTP, cfg.GoogleOAuth)
+	addrRes := resolver.NewStatic(cfg.SenderMap)
 
-	processor := processor.New(quotaStore, emailValidator, provFactory, qClient, cfg.RetryPolicy)
+	processor := processor.New(quotaStore, emailValidator, provFactory, addrRes, qClient, cfg.RetryPolicy)
 	for i := 0; i < cfg.WorkerCount; i++ {
 		go processor.Start(ctx)
 	}

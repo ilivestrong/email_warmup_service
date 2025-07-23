@@ -31,6 +31,7 @@ type Config struct {
 	QueueURL    string
 	RedisURL    string
 	ProviderMap map[string]string
+	SenderMap   map[string]string
 	RetryPolicy RetryPolicy
 	WorkerCount int
 	Validator   struct{ DisposableDomains []string }
@@ -54,7 +55,6 @@ func Load() (*Config, error) {
 
 	v.SetConfigName("config")
 	v.AddConfigPath(".")
-	_ = v.ReadInConfig()
 
 	// Set defaults
 	v.SetDefault("WORKER_COUNT", 5)
@@ -63,13 +63,13 @@ func Load() (*Config, error) {
 	v.SetDefault("QUOTA_SCORE_THRESHOLD", 0.8)
 	v.SetDefault("QUOTA_SCALE_FACTOR", 1.5)
 
-	viper.BindEnv("QUOTA_SCORE_THRESHOLD")
-	viper.BindEnv("QUOTA_SCALE_FACTOR")
+	v.BindEnv("QUOTA_SCORE_THRESHOLD")
+	v.BindEnv("QUOTA_SCALE_FACTOR")
 
-	viper.BindEnv("GOOGLE_CREDENTIALS_JSON")
-	viper.BindEnv("GOOGLE_ACCESS_TOKEN")
-	viper.BindEnv("GOOGLE_REFRESH_TOKEN")
-	viper.BindEnv("GOOGLE_EMAIL_SENDER")
+	v.BindEnv("GOOGLE_CREDENTIALS_JSON")
+	v.BindEnv("GOOGLE_ACCESS_TOKEN")
+	v.BindEnv("GOOGLE_REFRESH_TOKEN")
+	v.BindEnv("GOOGLE_EMAIL_SENDER")
 
 	// Unmarshal values
 	cfg := &Config{}
@@ -77,6 +77,8 @@ func Load() (*Config, error) {
 	cfg.RedisURL = v.GetString("REDIS_URL")
 
 	cfg.ProviderMap = v.GetStringMapString("PROVIDER_MAP")
+	cfg.SenderMap = v.GetStringMapString("TENANT_SENDER_MAP")
+
 	cfg.WorkerCount = v.GetInt("WORKER_COUNT")
 
 	cfg.RetryPolicy.MaxRetries = v.GetInt("RETRY_POLICY_MAX_RETRIES")

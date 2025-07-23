@@ -8,7 +8,7 @@ import (
 )
 
 type Provider interface {
-	Send(ctx context.Context, to, subj, body string) error
+	Send(ctx context.Context, from, to, subj, body string) error
 	CheckDelivery(ctx context.Context, to, subj, body string) (bool, error)
 	CheckBounce(ctx context.Context, to, subj, body string) (bool, error)
 	CheckOpen(ctx context.Context, to, subj, body string) (bool, error)
