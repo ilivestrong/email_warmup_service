@@ -25,7 +25,6 @@ func NewGoogleProvider(cfg config.GoogleOAuthConfig) Provider {
 	ctx := context.Background()
 	oauthConfig, err := google.ConfigFromJSON([]byte(cfg.GoogleCredentialsJSON), gmail.GmailSendScope, gmail.GmailReadonlyScope)
 	if err != nil {
-		fmt.Println("----------- ", cfg.GoogleCredentialsJSON)
 		panic(fmt.Sprintf("failed to parse OAuth config: %v", err))
 	}
 	token := &oauth2.Token{
@@ -47,7 +46,6 @@ func NewGoogleProvider(cfg config.GoogleOAuthConfig) Provider {
 }
 
 func (g *GoogleProvider) Send(ctx context.Context, from, to, subject, body string) error {
-	fmt.Println(from, to)
 	msg := []byte(fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s", from, to, subject, body))
 	raw := base64.URLEncoding.EncodeToString(msg)
 	_, err := g.service.Users.Messages.Send(from, &gmail.Message{Raw: raw}).Do()

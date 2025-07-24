@@ -7,6 +7,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/viper v1.20.1
 	github.com/streadway/amqp v1.1.0
+	github.com/zerobounce/zerobouncego v1.1.1
 	golang.org/x/oauth2 v0.25.0
 	google.golang.org/api v0.215.0
 )
@@ -26,6 +27,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
+	github.com/jarcoal/httpmock v1.3.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
@@ -46,5 +48,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
 	google.golang.org/grpc v1.67.3 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
+	gopkg.in/guregu/null.v4 v4.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

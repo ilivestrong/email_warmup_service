@@ -32,17 +32,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("queue init error: %v", err)
 	}
-	fmt.Println("email queue connected")
+	fmt.Println("listening to events...")
 
 	quotaStore, err := quota.NewStore(cfg.RedisURL)
 	if err != nil {
 		log.Fatalf("redis: %v", err)
 	}
 
-	emailValidator := validator.New(cfg.Validator.DisposableDomains)
+	zeroBounceClient := validator.NewZeroBounceClient(cfg.ZeroBounce)
+	emailValidator := validator.New(cfg.Validator.DisposableDomains, zeroBounceClient)
+
 	provFactory := providers.NewFactory(cfg.ProviderMap, cfg.SMTP, cfg.GoogleOAuth)
 	addrRes := resolver.NewStatic(cfg.SenderMap)
-
 	processor := processor.New(quotaStore, emailValidator, provFactory, addrRes, qClient, cfg.RetryPolicy)
 	for i := 0; i < cfg.WorkerCount; i++ {
 		go processor.Start(ctx)

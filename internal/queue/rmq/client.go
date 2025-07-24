@@ -62,14 +62,14 @@ func (c *Client) Consume(ctx context.Context, handler SendEmailEventHandler) err
 		case msg := <-msgs:
 			e := new(SendEmailEvent)
 			if err := json.Unmarshal(msg.Body, e); err != nil {
-				log.Printf("invalid msg: %v", err)
+				log.Printf("invalid email event: %v", err)
 				msg.Ack(false)
 				continue
 			}
-			fmt.Println("new send email event: ", *e)
+			fmt.Printf("\n[NEW EVENT]: email: %s\n", e.ToAddress)
 			err := handler(ctx, e)
 			if err != nil {
-				fmt.Println("err with handler()")
+				fmt.Println("failed to process event")
 				msg.Nack(false, false)
 			} else {
 				msg.Ack(false)

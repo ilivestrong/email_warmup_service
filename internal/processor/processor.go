@@ -37,6 +37,7 @@ func (p *Processor) handle(ctx context.Context, ev *queue.SendEmailEvent) error 
 		r = 100
 	}
 	if !p.v.IsValid(ev.ToAddress) {
+		fmt.Printf("[%s] is invalid, skipping...\n", ev.ToAddress)
 		return nil
 	}
 	fromAddr, err := p.emailResolver.Resolve(ctx, ev.TenantID)

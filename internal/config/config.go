@@ -27,6 +27,10 @@ type GoogleOAuthConfig struct {
 	GoogleEmailSender     string
 }
 
+type ZeroBounceConfig struct {
+	ApiKey string
+}
+
 type Config struct {
 	QueueURL    string
 	RedisURL    string
@@ -41,6 +45,8 @@ type Config struct {
 
 	QuotaScoreThreshold float64
 	QuotaScaleFactor    float64
+
+	ZeroBounce ZeroBounceConfig
 }
 
 func Load() (*Config, error) {
@@ -70,6 +76,7 @@ func Load() (*Config, error) {
 	v.BindEnv("GOOGLE_ACCESS_TOKEN")
 	v.BindEnv("GOOGLE_REFRESH_TOKEN")
 	v.BindEnv("GOOGLE_EMAIL_SENDER")
+	v.BindEnv("ZERO_BOUNCE_API_KEY")
 
 	// Unmarshal values
 	cfg := &Config{}
@@ -99,6 +106,8 @@ func Load() (*Config, error) {
 	cfg.GoogleOAuth.GoogleAccessToken = v.GetString("GOOGLE_ACCESS_TOKEN")
 	cfg.GoogleOAuth.GoogleRefreshToken = v.GetString("GOOGLE_REFRESH_TOKEN")
 	cfg.GoogleOAuth.GoogleEmailSender = v.GetString("GOOGLE_EMAIL_SENDER")
+
+	cfg.ZeroBounce.ApiKey = v.GetString("ZERO_BOUNCE_API_KEY")
 
 	return cfg, nil
 }

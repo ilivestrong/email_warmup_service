@@ -37,7 +37,7 @@ func (f *Factory) Get(tenantID string) (Provider, error) {
 		return NewGoogleProvider(f.googleOAuthConfig), nil
 
 	case "outlook":
-		// return NewOutlookProvider()
+		// TODO
 		return nil, nil
 	}
 	return nil, errors.New("unknown provider: " + t)

@@ -1,22 +1,39 @@
 package validator
 
-import "strings"
+import (
+	"net/mail"
+	"strings"
+)
 
-type Validator struct{ m map[string]struct{} }
-
-func New(list []string) *Validator {
-	m := map[string]struct{}{}
-	for _, d := range list {
-		m[strings.ToLower(d)] = struct{}{}
-	}
-	return &Validator{m}
+type Validator struct {
+	disposableDomains map[string]struct{}
+	// disposable map[string]struct{}
+	zeroBounce *zeroBounceClient
 }
 
-func (v *Validator) IsValid(e string) bool {
-	p := strings.Split(e, "@")
+func New(disposableDomains []string, zeroBounceClient *zeroBounceClient) *Validator {
+	m := map[string]struct{}{}
+	for _, domain := range disposableDomains {
+		m[strings.ToLower(domain)] = struct{}{}
+	}
+	return &Validator{m, zeroBounceClient}
+}
+
+func (v *Validator) IsValid(address string) bool {
+	if _, err := mail.ParseAddress(address); err != nil {
+		return false
+	}
+
+	p := strings.Split(address, "@")
 	if len(p) != 2 {
 		return false
 	}
-	_, bad := v.m[strings.ToLower(p[1])]
-	return !bad
+	if _, bad := v.disposableDomains[strings.ToLower(p[1])]; bad {
+		return !bad
+	}
+
+	if res := v.zeroBounce.Validate(address); res.Err != nil {
+		return false
+	}
+	return true
 }
