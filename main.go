@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"os/signal"
 	"syscall"
 
@@ -18,6 +20,10 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
@@ -44,7 +50,7 @@ func main() {
 
 	provFactory := providers.NewFactory(cfg.ProviderMap, cfg.SMTP, cfg.GoogleOAuth)
 	addrRes := resolver.NewStatic(cfg.SenderMap)
-	processor := processor.New(quotaStore, emailValidator, provFactory, addrRes, qClient, cfg.RetryPolicy)
+	processor := processor.New(quotaStore, emailValidator, provFactory, addrRes, qClient, cfg.RetryPolicy, logger)
 	for i := 0; i < cfg.WorkerCount; i++ {
 		go processor.Start(ctx)
 	}
