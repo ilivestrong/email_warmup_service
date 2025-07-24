@@ -10,7 +10,6 @@ Supports multiple providers, quota management, event-driven processing, and is d
 - [Overview](#overview)
 - [Features](#features)
 - [Architecture](#architecture)
-- [Directory Structure](#directory-structure)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
 - [Usage](#usage)
@@ -36,7 +35,7 @@ It is built with Go, leverages Redis for quota management, RabbitMQ for event qu
 - **Multi-provider support:** SMTP, Google, Outlook, and easily extensible to more.
 - **Quota management:** Redis-backed daily quotas, automatic scaling based on email scores.
 - **Event-driven architecture:** RabbitMQ queue for email send events.
-- **Disposable domain validation:** Prevents sending to disposable email addresses.
+- **Disposable domain & ZeroBounce validation:** Prevents sending to disposable email addresses and uses [ZeroBounce](https://zerobounce.net/) for advanced email validation.
 - **Configurable retry policy:** Control retries and delays for email sending.
 - **Daily scheduler:** Automatically checks scores and scales quotas.
 - **Extensible abstractions:** Add new providers, queue backends, or quota stores with minimal changes.
@@ -57,40 +56,7 @@ Key abstractions are implemented as interfaces, making it easy to add new provid
 - **Processor:** [`internal/processor/processor.go`](internal/processor/processor.go) — Handles email send events, scoring, quota deduction.
 - **Scheduler:** [`internal/scheduler/scheduler.go`](internal/scheduler/scheduler.go) — Daily job for scaling quotas.
 - **Providers:** [`internal/providers/factory.go`](internal/providers/factory.go), [`smtp.go`](internal/providers/smtp.go) — Provider factory and SMTP implementation.
-- **Validator:** [`internal/validator/validator.go`](internal/validator/validator.go) — Disposable domain validator.
-
----
-
-## Directory Structure
-
-```
-.env
-go.mod
-main.go
-internal/
-  config/
-    config.go
-  processor/
-    processor.go
-  providers/
-    factory.go
-    smtp.go
-    google.go
-    outlook.go
-  queue/
-    client.go
-    events/
-      events.go
-    rmq/
-      client.go
-  quota/
-    redis-store.go
-    store.go
-  scheduler/
-    scheduler.go
-  validator/
-    validator.go
-```
+- **Validator:** [`internal/validator/validator.go`](internal/validator/validator.go), [`internal/validator/zerobounce.go`](internal/validator/zerobounce.go) — Disposable domain validator and ZeroBounce integration.
 
 ---
 
@@ -132,6 +98,7 @@ SMTP_PORT=1025
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=no-reply@example.com
+ZERO_BOUNCE_API_KEY=your-zerobounce-api-key
 ```
 
 ---
@@ -147,10 +114,40 @@ SMTP_FROM=no-reply@example.com
 ### How It Works
 
 1. **Startup:** Loads config, connects to Redis and RabbitMQ, starts worker goroutines.
-2. **Event Queue:** Listens for `SendEmailEvent` messages from RabbitMQ.
+2. **Event Queue:** Listens for `SendEmailEvent` messages from RabbitMQ on a queue named `"send_email"`. _Please ensure that a queue with this name is created before running the service._
 3. **Processing:** Each event is validated, quota checked, and sent via the appropriate provider.
 4. **Scoring:** Delivery, open, bounce, and spam status are scored and saved.
 5. **Quota Scaling:** Daily scheduler checks scores and increases quotas for high-performing tenants.
+
+---
+
+## ZeroBounce Integration
+
+This service uses [ZeroBounce](https://zerobounce.net/) to validate recipient email addresses before sending.  
+ZeroBounce helps detect invalid, risky, or disposable emails, improving deliverability and sender reputation.
+
+**How it works:**
+
+- Before sending, the validator checks if the email is from a disposable domain.
+- Then, it calls the ZeroBounce API to validate the address.
+- If the address is invalid or risky, the email is not sent.
+
+**Configuration:**  
+Set your ZeroBounce API key in the `.env` file as `ZERO_BOUNCE_API_KEY`.
+
+See [`internal/validator/validator.go`](internal/validator/validator.go) and [`internal/validator/zerobounce.go`](internal/validator/zerobounce.go) for implementation details.
+
+---
+
+## Scheduler
+
+The scheduler runs a daily check (every 20 seconds for demo/testing) to:
+
+- Retrieve the previous day's scores for each tenant.
+- Calculate the average score.
+- If the average score is high (≥ 0.8), increase the tenant's quota.
+
+See [`internal/scheduler/scheduler.go`](internal/scheduler/scheduler.go) for details.
 
 ---
 
@@ -264,6 +261,7 @@ Quota stores must implement the `QuotaStore` interface.
 | RETRY_POLICY_INITIAL_DELAY                            | Initial delay between retries               |
 | VALIDATOR_DISPOSABLE_DOMAINS                          | Comma-separated list of disposable domains  |
 | SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM | SMTP credentials                            |
+| ZERO_BOUNCE_API_KEY                                   | API key for ZeroBounce email validation     |
 
 ---
 
@@ -288,4 +286,4 @@ MIT
 
 ---
 
-**Note:** This project is intended for educational and development purposes. Use responsibly and comply with email sending best practices.
+**Note:** This project is intended for educational and development purposes. Use responsibly and comply with email sending
